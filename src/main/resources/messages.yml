@@ -1,0 +1,41 @@
+# Сообщения HotMessages. Поддерживаются цветовые коды через & и hex (&#RRGGBB).
+# Плейсхолдеры зависят от сообщения: %player%, %word%, %amount%, %time% и т.д.
+#
+# Палитра HopNeo (HotMessages):
+#   фон/рамка  #1f2428   акцент/лого #7fffbd
+#   нейтральный текст #dce7e3   предупреждение/ошибка #ff6b6b
+
+prefix: "&#1f2428[&#7fffbdHotMessages&#1f2428]&r "
+
+no-permission: "&#ff6b6bУ вас нет прав на это действие."
+player-not-found: "&#ff6b6bИгрок &#dce7e3%player% &#ff6b6bне найден."
+
+usage: "&#dce7e3Использование: &#7fffbd/hotmessages <reload|toggle|addword|removeword|warnings|clearwarnings|mute|unmute>"
+usage-addword: "&#dce7e3Использование: &#7fffbd/hotmessages addword <слово>"
+usage-removeword: "&#dce7e3Использование: &#7fffbd/hotmessages removeword <слово>"
+usage-warnings: "&#dce7e3Использование: &#7fffbd/hotmessages warnings <игрок>"
+usage-clearwarnings: "&#dce7e3Использование: &#7fffbd/hotmessages clearwarnings <игрок>"
+usage-mute: "&#dce7e3Использование: &#7fffbd/hotmessages mute <игрок> [минуты]"
+usage-unmute: "&#dce7e3Использование: &#7fffbd/hotmessages unmute <игрок>"
+
+reload-success: "&#7fffbdКонфигурация, сообщения и список слов перезагружены."
+toggle-on: "&#7fffbdHotMessages включён."
+toggle-off: "&#ff6b6bHotMessages выключен."
+
+word-added: "&#7fffbdДобавлено запрещённое слово: &#dce7e3%word%"
+word-removed: "&#7fffbdУдалено запрещённое слово: &#dce7e3%word%"
+word-not-found: "&#ff6b6bСлово &#dce7e3%word% &#ff6b6bне найдено в списке."
+
+warnings-count: "&#dce7e3У игрока &#7fffbd%player% &#dce7e3сейчас &#7fffbd%amount% &#dce7e3предупреждений."
+warnings-cleared: "&#7fffbdПредупреждения игрока &#dce7e3%player% &#7fffbdсброшены."
+
+mute-success: "&#7fffbdИгрок &#dce7e3%player% &#7fffbdзамьючен в чате на &#dce7e3%time% &#7fffbdмин."
+unmute-success: "&#7fffbdС игрока &#dce7e3%player% &#7fffbdснят мут чата."
+
+muted-chat: "&#ff6b6bВаш чат временно ограничен. Осталось: &#dce7e3%time% &#ff6b6bсек."
+spam-cooldown: "&#ff6b6bВы пишете слишком часто, подождите немного."
+spam-duplicate: "&#ff6b6bНе повторяйте одно и то же сообщение."
+
+word-blocked: "&#ff6b6bСообщение заблокировано: в нём есть запрещённые слова."
+word-censored: "&#ff6b6bНекоторые слова в вашем сообщении были скрыты фильтром."
+auto-muted: "&#ff6b6bЗа повторные нарушения вы замьючены в чате на &#dce7e3%time% &#ff6b6bсек."
