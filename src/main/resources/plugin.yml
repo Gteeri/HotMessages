@@ -1,22 +1,21 @@
 name: HotMessages
-version: '${project.version}'
-main: dev.gteeri.hotmessages.HotMessages
-api-version: '1.21'
+version: 1.0.0
+main: ru.sitbix.hotmessages.HotMessagesPlugin
+api-version: '1.21.11'
 folia-supported: true
-author: Gteeri
-description: Фильтр чата HopNeo — запрещённые слова, антиспам и антифлуд с системой предупреждений и мутов.
-
-commands:
-  hotmessages:
-    description: Управление HotMessages
-    usage: /<command> <reload|toggle|addword|removeword|warnings|clearwarnings|mute|unmute>
-    permission: hotmessages.admin
-    aliases: [hm, hotmsg]
+author: Sitbix
+description: Advanced Folia-ready chat filter with logs, GUI, whitelist and blacklist.
 
 permissions:
   hotmessages.admin:
-    description: Доступ к админ-командам HotMessages
+    description: Full access to HotMessages commands and GUI.
+    default: op
+  hotmessages.notify:
+    description: Receives alerts when a message is blocked.
     default: op
   hotmessages.bypass:
-    description: Игнорировать фильтр слов и антиспам
+    description: Bypasses all filters.
+    default: false
+  hotmessages.ghost:
+    description: Can use /hm ghost to see private messages.
     default: op

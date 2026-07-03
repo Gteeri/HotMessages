@@ -1,73 +1,405 @@
-# ===========================================================
-#  HotMessages — конфигурация
-# ===========================================================
 
-enabled: true
+# HotMessages
 
-storage:
-  # Файл, в котором хранятся активные муты чата (переживают перезапуск сервера)
-  mutes-file: mutes.yml
+# Основные настройки плагина
 
-# ===========================================================
-#  Фильтр запрещённых слов
-# ===========================================================
-filter:
+settings:
+  # Глобальное включение/выключение фильтра
   enabled: true
-  # CENSOR — заменяет запрещённые слова символом цензуры прямо в сообщении
-  # BLOCK  — полностью отменяет сообщение
-  mode: CENSOR
-  censor-symbol: "*"
-  # Право, при наличии которого игрок полностью пропускает фильтр и антиспам
-  bypass-permission: hotmessages.bypass
+  # Проверять публичный чат
+  check-public-chat: true
+  # Проверять личные сообщения (через /msg, /tell и т.д.)
+  check-private-messages: true
+  # Действие при обнаружении запрещённого контента:
+  #   cancel      — отменить сообщение и показать предупреждение
+  #   log-only    — пропустить сообщение, но записать в лог
+  block-action: cancel
+  # Уведомлять staff-игроков о блокировках
+  notify-staff: true
+  # Записывать блокировки в файл logs/blocked-messages.log
+  log-to-file: true
+  # Выводить блокировки в консоль сервера
+  log-to-console: true
+  # Сколько последних блокировок хранить в памяти (для /hm logs и GUI)
+  remember-recent-logs: 54
 
-# ===========================================================
-#  Предупреждения и муты
-# ===========================================================
-warnings:
+  # Права 
+  bypass-permission: hotmessages.bypass    # Обход фильтра
+  notify-permission: hotmessages.notify    # Уведомления о блокировках
+  admin-permission: hotmessages.admin      # Полный доступ к GUI и командам
+  ghost-permission: hotmessages.ghost      # Режим слежки за ЛС
+
+
+# =========================================
+# Система локального и глобального чата
+# =========================================
+chat:
+  # Включить систему локального/глобального чата
+  # Если false — стандартный чат Minecraft (все слышат всех)
   enabled: true
-  # Сколько нарушений фильтра подряд приводит к автоматическому муту
-  warnings-before-mute: 3
-  # Через сколько минут неактивности счётчик предупреждений сбрасывается
-  warning-reset-after-minutes: 30
-  # Длительность мута при первом достижении лимита предупреждений (минуты)
-  mute-duration-minutes: 5
-  # Если true — каждый следующий автомут для того же игрока в 2 раза длиннее предыдущего
-  escalate-mute: true
-  # Верхний предел длительности автомута, даже с учётом эскалации (минуты)
-  max-mute-duration-minutes: 120
+  # Максимальная дальность локального чата (в блоках)
+  local-distance: 200
+  # Префикс глобального чата (перед сообщением, например: !привет)
+  global-prefix: "!"
+  # Формат локального сообщения (плейсхолдеры: {player}, {message})
+  local-format: "&7[L] &f{player} &8» &7{message}"
+  # Формат глобального сообщения
+  global-format: "&6[G] &f{player} &8» &f{message}"
+  # Включить цветовые коды в сообщениях (через &)
+  allow-color-codes: true
 
-# ===========================================================
-#  Антиспам / антифлуд
-#  Пороги специально подобраны так, чтобы не мешать обычным игрокам —
-#  большинство защит смягчают сообщение, а не блокируют его целиком.
-# ===========================================================
-anti-spam:
+
+# База данных для хранения мутов и логов
+
+database:
+  # Тип базы данных: sqlite или mysql
+  type: sqlite
+  # Настройки SQLite (файл в папке плагина)
+  sqlite:
+    file: hotmessages.db
+  # Настройки MySQL
+  mysql:
+    host: localhost
+    port: 3306
+    database: hotmessages
+    username: root
+    password: ""
+    pool-size: 5
+  # Автоочистка логов старше N дней (0 = не удалять)
+  purge-logs-after-days: 30
+
+
+# Антиспам — защита от спама и дубликатов
+
+spam:
+  # Включить антиспам
   enabled: true
-  # Минимальная задержка между сообщениями одного игрока, в миллисекундах
-  message-cooldown-ms: 1200
-  # Сколько раз подряд можно повторить одно и то же сообщение, прежде чем оно будет заблокировано
-  duplicate-limit: 3
-  # Окно времени (сек), в течение которого считаются повторы
-  duplicate-window-seconds: 30
+  # Максимум сообщений за окно времени
+  max-messages-per-window: 5
+  # Длина окна времени (секунды)
+  window-seconds: 8
+  # Максимум одинаковых сообщений
+  max-duplicates: 2
+  # Окно для отслеживания дубликатов (секунды)
+  duplicate-window-seconds: 45
+  # Минимальная длина сообщения для проверки на дубликаты
+  min-message-length-for-duplicate: 6
 
-  caps:
+
+# Автоматический мут за повторные нарушения
+
+escalation:
+  # Включить систему эскалации
+  enabled: true
+  # Сколько нарушений допустимо до автоматического мута
+  max-violations: 3
+  # Окно времени для подсчёта нарушений (секунды, 3600 = 1 час)
+  window-seconds: 3600
+  # Длительность автоматического мута (секунды, 120 = 2 минуты, -1 = навсегда)
+  mute-duration-seconds: 120
+  # Причина автоматического мута
+  mute-reason: "Многократные нарушения правил чата"
+
+
+# Нормализация текста
+# Определяет как сообщения приводятся к
+# «общему виду» перед проверкой.
+
+normalization:
+  # Приводить к нижнему регистру
+  lowercase: true
+  # Удалять цветовые коды (&a, §b и т.д.)
+  strip-color-codes: true
+  # Удалять диакритику (é → e, ñ → n)
+  strip-diacritics: true
+  # Сжимать множественные пробелы в один
+  collapse-spaces: true
+  # Удалять символы нулевой ширины (невидимые символы)
+  remove-zero-width: true
+  # Удалять разделители для compact-проверки
+  remove-separators-for-compact-check: true
+  # Макс. количество повторяющихся символов подряд (2 = "heeeello" → "hello")
+  max-repeated-character-run: 2
+  # Замены символов для обхода обфускации
+  replacements:
+    "0": "o"
+    "1": "i"
+    "3": "e"
+    "4": "a"
+    "5": "s"
+    "7": "t"
+    "@": "a"
+    "$": "s"
+    "!": "i"
+    "|": "i"
+    "а": "a"
+    "в": "b"
+    "с": "c"
+    "е": "e"
+    "ё": "e"
+    "н": "h"
+    "к": "k"
+    "м": "m"
+    "о": "o"
+    "р": "p"
+    "т": "t"
+    "х": "x"
+    "у": "y"
+    "з": "z"
+    "и": "i"
+    "л": "l"
+    "д": "d"
+    "п": "p"
+    "я": "ya"
+    "ю": "yu"
+    "ч": "ch"
+    "ш": "sh"
+    "щ": "sh"
+
+
+# Команды ЛС (извлекают текст сообщения)
+# Формат: команда: номер_слова_где_начинается_текст
+
+private-message-commands:
+  msg: 2
+  tell: 2
+  w: 2
+  whisper: 2
+  pm: 2
+  m: 2
+  r: 1
+  reply: 1
+  mail: 2
+  email: 2
+
+
+# Динамический список блокируемых доменов
+# Формат: "домен": true/false (вкл/выкл)
+
+domains:
+  ".su": true
+  ".ru": true
+  ".com": true
+  ".net": true
+  ".org": true
+  ".gg": true
+  ".me": true
+  ".io": true
+  ".fun": true
+  ".top": true
+  ".xyz": true
+  ".site": true
+  ".club": true
+  ".online": true
+  ".shop": true
+  ".pro": true
+  ".dev": true
+  ".app": true
+  ".pw": true
+  ".biz": true
+  ".info": true
+  ".cc": true
+  ".tv": true
+  ".kz": true
+  ".ua": true
+  ".by": true
+
+
+# Белый список — разрешённый контент
+# Удаляется из сообщения перед проверкой
+
+whitelist:
+  fragments:
+    - "hotmessages.ru"
+    - "sirbix.ru"
+    - "discord.gg/official"
+    - "vk.com/official"
+  regex:
+    - id: "official-subdomains"
+      pattern: "(?i)(^|\\b)([a-z0-9-]+\\.)?sirbix\\.ru($|\\b|/)"
+
+
+# Чёрный список — запрещённый контент
+
+blacklist:
+  fragments:
+    - "discord.gg/"
+    - "discord.com/invite/"
+    - "dsc.gg/"
+    - "t.me/"
+    - "telegram.me/"
+    - "vk.com/"
+    - "vk.me/"
+    - "ссылка в лс"
+    - "скину айпи"
+    - "заходи на сервер"
+    - "лучший сервер"
+    - "промокод"
+    - "promo"
+    - "promocode"
+    - "free donate"
+    - "бесплатный донат"
+  compact-fragments:
+    - "discordgg"
+    - "discordcominvite"
+    - "discordgginvite"
+    - "discordggserver"
+    - "discordggjoin"
+    - "discordcom"
+    - "dscgg"
+    - "tme"
+    - "vkcom"
+    - "vkme"
+    - "promocode"
+    - "freedonate"
+    - "zaxodinaserver"
+    - "skinuaypi"
+
+
+# Regex-правила
+
+regex-rules:
+  - id: "ipv4-address"
+    reason: "IP address"
+    pattern: "(?i)(?:^|[^0-9])(?:\\d{1,3}[._,;:/\\\\-]{1,3}){3}\\d{1,3}(?=$|[^0-9])"
+  - id: "ip-with-port"
+    reason: "IP with port"
+    pattern: "(?i)(?:^|[^0-9])(?:\\d{1,3}[._,;:/\\\\-]{1,3}){3}\\d{1,3}\\s{0,3}[:;]\\s{0,3}\\d{2,5}(?=$|[^0-9])"
+  - id: "domain"
+    reason: "Domain or URL"
+    pattern: "(?i)(?:https?\\s{0,3}[:;]\\s{0,3}/\\s{0,3}/|www\\s{0,3}[.]\\s{0,3})?[a-z0-9а-яё][a-z0-9а-яё._-]{1,60}\\s{0,3}[.]\\s{0,3}(?:ru|com|net|org|gg|su|me|io|fun|top|xyz|site|club|online|shop|pro|dev|app|pw|biz|info|cc|tv|kz|ua|by)(?:\\b|/)"
+  - id: "minecraft-domain-port"
+    reason: "Minecraft server address"
+    pattern: "(?i)\\b[a-z0-9а-яё][a-z0-9а-яё._-]{1,60}\\s{0,3}[:;]\\s{0,3}\\d{2,5}\\b"
+  - id: "discord-invite-obfuscated"
+    reason: "Discord invite"
+    pattern: "(?i)d\\s*[i1!|]\\s*s\\s*c\\s*[o0]\\s*r\\s*d\\s*(?:[.]|dot|точка|\\s)+\\s*(?:gg|com)(?:\\s*/[\\s\\S]{0,30})?\\b"
+  - id: "telegram-obfuscated"
+    reason: "Telegram link"
+    pattern: "(?i)(?:t\\s*[.]\\s*me|telegram\\s*[.]\\s*me|телеграм|тг)\\s*/?\\s*[a-z0-9_]{3,}"
+  - id: "mass-message-marker"
+    reason: "Mass spam marker"
+    pattern: "(?i)\\b(?:рассылка|скинь всем|передай всем|spam|спам|invite all)\\b"
+  - id: "spaced-domain"
+    reason: "Domain with spaced letters"
+    pattern: "(?i)[a-zа-яё](?:\\s{1,3}[a-zа-яё]){3,}\\s{0,3}[.]\\s{0,3}(?:ru|com|net|org|gg|su|me|io|fun|top|xyz|site|club|online|shop|pro|dev|app|pw|biz|info|cc|tv|kz|ua|by)(?:\\b|/)"
+
+
+# Сообщения плагина
+# Плейсхолдеры: {player} {reason} {message}
+#   {time} {count} {max} {domain} {word}
+#   {target} {sender}
+
+messages:
+  prefix: "&6&lЧат &8» "
+  blocked-player: "&cСообщение заблокировано: &f{reason}"
+  blocked-staff: "&e{player} &7попытался отправить запрещённое сообщение &8(&c{reason}&8)&7: &f{message}"
+  reloaded: "&aКонфиг перезагружен."
+  no-permission: "&cНет прав."
+  enabled: "&aФильтр включён."
+  disabled: "&cФильтр выключен."
+  test-clean: "&aСообщение чистое."
+  test-blocked: "&cСообщение будет заблокировано: &f{reason}"
+  logs-empty: "&7Логов пока нет."
+  escalation-auto-muted: "&cВы автоматически замучены на &f{time}&c. Причина: &f{reason}"
+  escalation-warning: "&eВнимание! Нарушение &f{count}&e/&f{max}&e. При следующем — автоматический мут."
+  gui-title: "&0HotMessages"
+  gui-settings-title: "&0HotMessages: настройки"
+  gui-domains-title: "&0HotMessages: домены"
+  gui-banned-words-title: "&0HotMessages: запрещённые слова"
+  gui-logs-title: "&0HotMessages: логи"
+  gui-domain-input: "&eВведите домен в чат (например: example.com):"
+  gui-domain-added: "&aДомен &f{domain} &aдобавлен."
+  gui-domain-exists: "&cДомен &f{domain} &cуже существует."
+  gui-domain-removed: "&cДомен &f{domain} &cудалён."
+  gui-domain-toggled: "&eДомен &f{domain} &eпереключён."
+  gui-domain-empty: "&cДомен не может быть пустым."
+  gui-domain-cannot-remove: "&cНельзя удалить встроенный домен. Можно только отключить."
+  gui-word-input: "&eВведите запрещённое слово в чат:"
+  gui-word-added: "&aСлово &f{word} &aдобавлено."
+  gui-word-removed: "&cСлово &f{word} &cудалено."
+  gui-word-empty: "&cСлово не может быть пустым."
+  mute-success: "&aИгрок &f{player} &aзамучен на &f{time}&a. Причина: &f{reason}"
+  mute-player: "&cВы замучены на &f{time}&c. Причина: &f{reason}"
+  muted-player: "&cВы замучены ({time}). Причина: &f{reason}"
+  unmute-success: "&aИгрок &f{player} &aразмучен."
+  unmute-player: "&aВы размучены."
+  mute-player-not-found: "&cИгрок &f{player} &cне найден."
+  mute-not-muted: "&cИгрок &f{player} &cне замучен."
+  pm-sent: "&7ЛС &8» &f{target} &7: &f{message}"
+  pm-received: "&7ЛС &8» &f{sender} &7: &f{message}"
+  pm-usage: "&eИспользование: /msg <игрок> <сообщение>"
+  pm-reply-usage: "&eИспользование: /r <сообщение>"
+  pm-target-offline: "&cИгрок не в сети."
+  pm-no-reply: "&cНекому отвечать. Используйте /msg <игрок> <сообщение>"
+  pm-self: "&cНельзя писать самому себе."
+  pm-console: "&cЭта команда доступна только игрокам."
+  pm-ghost-enabled: "&aРежим слежки включён. Вы видите все ЛС."
+  pm-ghost-disabled: "&cРежим слежки выключен."
+  pm-ghost-see: "&8[Ghost] &f{sender} &7-> &f{target} &8: &7{message}"
+
+
+# GUI — материалы предметов
+
+gui:
+  material-enabled: LIME_DYE
+  material-disabled: GRAY_DYE
+  material-logs: WRITABLE_BOOK
+  material-reload: COMPARATOR
+  material-test: SPYGLASS
+  material-settings: REDSTONE
+
+
+# Звуковые эффекты
+
+sounds:
+  gui-click:
+    sound: UI_BUTTON_CLICK
+    volume: 1.0
+    pitch: 1.0
     enabled: true
-    # Проверка КАПСА применяется только к сообщениям от этой длины (символов)
-    min-length: 8
-    # Если доля заглавных букв выше — сообщение автоматически приводится к нижнему регистру
-    max-percentage: 70
-
-  flood-chars:
+  gui-open:
+    sound: BLOCK_CHEST_OPEN
+    volume: 1.0
+    pitch: 1.2
     enabled: true
-    # Сколько подряд идущих одинаковых символов допустимо, прежде чем лишние схлопываются
-    # (не блокирует сообщение — просто аккуратно подрезает растянутые слова)
-    max-repeats: 3
-
-# ===========================================================
-#  Производительность
-# ===========================================================
-performance:
-  # Как часто (сек) очищать память от неактивных антиспам-записей игроков
-  cleanup-interval-seconds: 300
-  # Забывать состояние офлайн-игрока спустя столько минут
-  forget-after-minutes: 15
+  gui-close:
+    sound: BLOCK_CHEST_CLOSE
+    volume: 1.0
+    pitch: 1.0
+    enabled: true
+  pm-send:
+    sound: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 1.5
+    enabled: true
+  pm-receive:
+    sound: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 0.8
+    enabled: true
+  blocked:
+    sound: BLOCK_ANVIL_LAND
+    volume: 1.0
+    pitch: 0.5
+    enabled: true
+  muted:
+    sound: BLOCK_GLASS_BREAK
+    volume: 1.0
+    pitch: 0.5
+    enabled: true
+  unmuted:
+    sound: BLOCK_AMETHYST_BLOCK_CHIME
+    volume: 1.0
+    pitch: 1.2
+    enabled: true
+  toggle-on:
+    sound: BLOCK_STONE_BUTTON_CLICK_ON
+    volume: 1.0
+    pitch: 1.0
+    enabled: true
+  toggle-off:
+    sound: BLOCK_STONE_BUTTON_CLICK_OFF
+    volume: 1.0
+    pitch: 1.0
+    enabled: true

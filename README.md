@@ -1,63 +1,61 @@
 # HotMessages
 
-Chat guard plugin for Paper/Folia 1.21+. Filters banned words (with leetspeak/spacing evasion detection), throttles chat spam and flooding, and escalates repeat offenders from warnings to temporary mutes — all while trying to stay out of the way of normal players.
+Advanced Folia-ready chat filter/guard for the HopNeo server: domain & IP blocking, anti-spam, escalating mutes, an in-game GUI, filtered private messages, and an optional local/global chat system.
 
 ## Features
 
-- **Smart word filter** — normalizes messages (case, leetspeak like `4`→`a`, separators like `b.a.d`, repeated letters like `baaaad`) before matching against `banned-words.yml`, so simple evasion tricks don't bypass the filter. Matching runs on an Aho-Corasick automaton, so performance stays O(message length) regardless of list size.
-- **Censor or block** — configurable: replace offending words with `*` in place, or cancel the whole message.
-- **Warnings → mute escalation** — repeated violations automatically mute chat for a configurable, optionally-doubling duration. Mutes persist across restarts.
-- **Anti-spam** — per-player message cooldown and duplicate-message detection.
-- **Anti-flood, low-friction** — excessive CAPS and stretched-out letters (`hiiiiiii`) are automatically softened instead of blocking the message outright, so casual players aren't punished for typing enthusiastically.
-- **Staff bypass** — `hotmessages.bypass` permission skips all checks.
-- **Folia-friendly scheduling** and periodic in-memory cleanup so tracking state doesn't grow unbounded on busy servers.
-- Branded messages using the HopNeo palette (`#1f2428` / `#7fffbd`).
+- **Chat filter** — blacklist/whitelist fragments, "compact" (de-obfuscated) fragment matching, and regex rules for IPv4 addresses, IP:port, domains, obfuscated Discord/Telegram invites and spaced-out domains (`d i s c o r d . g g`).
+- **Dynamic domain list** — built-in TLDs (`.ru`, `.com`, `.gg`, `.net`, ...) plus admin-added domains, all toggleable without restarting.
+- **In-game GUI** (`/hm gui`) — toggle the filter, reload config, browse recent blocked-message logs, and manage domains/banned words directly from an inventory menu.
+- **Anti-spam** — per-player burst limit and duplicate-message detection.
+- **Escalation** — repeated violations within a time window trigger an automatic mute (duration configurable).
+- **Mutes** — manual `/mute` and `/unmute`, persisted in SQLite or MySQL via HikariCP, with automatic migration from a legacy `mutes.yml`.
+- **Private messages** (`/msg`, `/tell`, `/w`, `/pm`, `/m`, `/r`, `/reply`) — filtered the same way as public chat, plus a staff "ghost" mode (`/hm ghost`) to monitor DMs.
+- **Optional local/global chat** — radius-based local chat with a `!`-prefixed global channel.
+- **Sound feedback** for GUI actions, blocks, mutes and unmutes.
+- **Persistent logs** — console, rotating file (`logs/blocked-messages.log`), and database, with configurable retention.
 
 ## Commands
 
 | Command | Description | Permission |
 |---|---|---|
-| `/hotmessages reload` | Reload config, messages and word list | `hotmessages.admin` |
-| `/hotmessages toggle` | Enable/disable the whole plugin | `hotmessages.admin` |
-| `/hotmessages addword <word>` | Add a banned word/phrase | `hotmessages.admin` |
-| `/hotmessages removeword <word>` | Remove a banned word/phrase | `hotmessages.admin` |
-| `/hotmessages warnings <player>` | Show a player's current warning count | `hotmessages.admin` |
-| `/hotmessages clearwarnings <player>` | Reset a player's warnings | `hotmessages.admin` |
-| `/hotmessages mute <player> [minutes]` | Manually mute a player's chat | `hotmessages.admin` |
-| `/hotmessages unmute <player>` | Remove a chat mute | `hotmessages.admin` |
+| `/hm` or `/hm gui` | Open the main GUI | `hotmessages.admin` |
+| `/hm reload` | Reload config.yml without restarting | `hotmessages.admin` |
+| `/hm toggle` | Enable/disable the filter | `hotmessages.admin` |
+| `/hm logs` | Show recent blocked messages | `hotmessages.admin` |
+| `/hm test <text>` | Check whether a message would be blocked | `hotmessages.admin` |
+| `/hm ghost` | Toggle monitoring of all private messages | `hotmessages.ghost` (via admin check) |
+| `/mute <player> [10m\|1h\|1d\|perm] [reason]` | Mute a player's chat | `hotmessages.admin` |
+| `/unmute <player>` | Remove a mute | `hotmessages.admin` |
+| `/msg`, `/tell`, `/w`, `/pm`, `/m <player> <message>` | Send a private message | — |
+| `/r`, `/reply <message>` | Reply to the last private message | — |
 
-Alias: `/hm`
+Aliases for the admin command: `/hotmessages`, `/hmchat`, `/chatfilter`.
 
 ## Permissions
 
 | Permission | Description | Default |
 |---|---|---|
-| `hotmessages.admin` | Access to all admin subcommands | op |
-| `hotmessages.bypass` | Skip word filter and anti-spam checks | op |
+| `hotmessages.admin` | Full access to commands and GUI | op |
+| `hotmessages.notify` | Receive alerts when a message is blocked | op |
+| `hotmessages.bypass` | Bypass all filters | false |
+| `hotmessages.ghost` | Use `/hm ghost` to see private messages | op |
 
 ## Configuration
 
-See `config.yml` for anti-spam/anti-flood/mute tuning, `banned-words.yml` for the word list, and `messages.yml` for all player-facing text and colors.
+Everything lives in `config.yml`: `settings`, `chat` (local/global), `database`, `spam`, `escalation`, `normalization` (leetspeak/Cyrillic-lookalike replacements, repeated-character collapsing), `private-message-commands`, `domains`, `whitelist`, `blacklist` (+ `compact-fragments`), `regex-rules`, `messages`, `gui` (item materials), and `sounds`.
 
-`banned-words.yml` ships with a small starter list focused on anti-advertising (links, invite codes). Add your server's actual profanity list via `/hotmessages addword` or by editing the file directly — one entry per line under `words:`.
-
-## Installation
-
-1. Download the JAR (see [Releases](../../releases) or the `Build` GitHub Action artifact)
-2. Place it in your server's `plugins/` folder
-3. Restart the server
-4. Edit `plugins/HotMessages/config.yml`, `messages.yml` and `banned-words.yml`
-5. Run `/hotmessages reload` to apply changes without restarting
+Domains added via the in-game GUI are stored separately in `domains.yml` so they survive `config.yml` edits/reloads.
 
 ## Requirements
 
-- Paper or Folia 1.21+
+- Paper or Folia 1.21.11+
 - Java 21
 
 ## Building from source
 
 ```bash
-mvn -B package
+mvn package
 ```
 
-The compiled plugin will be at `target/HotMessages-<version>.jar`. A GitHub Actions workflow (`.github/workflows/build.yml`) also builds and uploads the jar automatically on every push.
+Produces a shaded `target/HotMessages-1.0.0.jar` with HikariCP and the SQLite driver relocated to avoid classpath conflicts with other plugins.
