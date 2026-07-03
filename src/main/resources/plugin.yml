@@ -1,0 +1,22 @@
+name: HotMessages
+version: '${project.version}'
+main: dev.gteeri.hotmessages.HotMessages
+api-version: '1.21'
+folia-supported: true
+author: Gteeri
+description: Фильтр чата HopNeo — запрещённые слова, антиспам и антифлуд с системой предупреждений и мутов.
+
+commands:
+  hotmessages:
+    description: Управление HotMessages
+    usage: /<command> <reload|toggle|addword|removeword|warnings|clearwarnings|mute|unmute>
+    permission: hotmessages.admin
+    aliases: [hm, hotmsg]
+
+permissions:
+  hotmessages.admin:
+    description: Доступ к админ-командам HotMessages
+    default: op
+  hotmessages.bypass:
+    description: Игнорировать фильтр слов и антиспам
+    default: op
